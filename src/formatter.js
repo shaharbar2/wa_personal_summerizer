@@ -4,8 +4,7 @@ const CHARS_PER_TOKEN = 4;
 export function formatMessages(messages, isGroup) {
   const lines = messages.map((msg) => {
     const time = formatTimestamp(msg.timestamp);
-    const sender = isGroup ? getSenderName(msg) : null;
-    const prefix = sender ? `[${time}] [${sender}]` : `[${time}]`;
+    const prefix = isGroup ? `[${time}] [${msg.senderName}]` : `[${time}]`;
     return `${prefix} ${msg.body}`;
   });
 
@@ -41,7 +40,3 @@ function formatTimestamp(unixSeconds) {
   return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 }
 
-function getSenderName(msg) {
-  // Use the contact's pushname or notifyName, fallback to number
-  return msg._data?.notifyName || msg.from?.split('@')[0] || 'Unknown';
-}

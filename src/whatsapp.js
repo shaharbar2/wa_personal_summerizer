@@ -11,14 +11,15 @@ export async function createWhatsAppClient() {
       }),
       puppeteer: {
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        protocolTimeout: 120000
       },
       qrMaxRetries: 3
     });
 
     const timeout = setTimeout(() => {
-      reject(new Error('WhatsApp connection timed out after 60s. Try running: wasumm auth'));
-    }, 60000);
+      reject(new Error('WhatsApp connection timed out after 120s. Try running: wasumm auth'));
+    }, 120000);
 
     client.on('qr', (qr) => {
       console.log('\nScan this QR code with WhatsApp on your phone:\n');
@@ -120,15 +121,15 @@ export async function fetchMessages(client, chatInfo, scope) {
   switch (scope.type) {
     case 'last': {
       const msgs = await chat.fetchMessages({ limit: scope.value });
-      return filterTextMessages(msgs);
+      return filterAndEnrichMessages(msgs);
     }
 
     case 'since': {
       const ms = parseDuration(scope.value);
       const since = Date.now() - ms;
-      // Fetch a generous amount and filter by time
       const msgs = await chat.fetchMessages({ limit: 500 });
-      return filterTextMessages(msgs).filter((m) => m.timestamp * 1000 >= since);
+      const enriched = await filterAndEnrichMessages(msgs);
+      return enriched.filter((m) => m.timestamp * 1000 >= since);
     }
 
     case 'from': {
@@ -137,7 +138,8 @@ export async function fetchMessages(client, chatInfo, scope) {
         throw new Error(`Invalid date format: "${scope.value}". Use YYYY-MM-DD.`);
       }
       const msgs = await chat.fetchMessages({ limit: 500 });
-      return filterTextMessages(msgs).filter((m) => m.timestamp * 1000 >= fromDate);
+      const enriched = await filterAndEnrichMessages(msgs);
+      return enriched.filter((m) => m.timestamp * 1000 >= fromDate);
     }
 
     case 'unread': {
@@ -145,7 +147,7 @@ export async function fetchMessages(client, chatInfo, scope) {
         return [];
       }
       const msgs = await chat.fetchMessages({ limit: chatInfo.unreadCount });
-      return filterTextMessages(msgs);
+      return filterAndEnrichMessages(msgs);
     }
 
     default:
@@ -153,8 +155,29 @@ export async function fetchMessages(client, chatInfo, scope) {
   }
 }
 
-function filterTextMessages(messages) {
-  return messages.filter((m) => m.type === 'chat' && m.body && m.body.trim().length > 0);
+async function filterAndEnrichMessages(messages) {
+  const textMessages = messages.filter((m) => m.type === 'chat' && m.body && m.body.trim().length > 0);
+
+  // Resolve sender names via getContact()
+  const enriched = await Promise.all(
+    textMessages.map(async (m) => {
+      let senderName = 'Unknown';
+      try {
+        const contact = await m.getContact();
+        senderName = contact.pushname || contact.name || contact.number || 'Unknown';
+      } catch {
+        senderName = m._data?.notifyName || m.author?.split('@')[0] || m.from?.split('@')[0] || 'Unknown';
+      }
+      return {
+        timestamp: m.timestamp,
+        body: m.body,
+        senderName,
+        fromMe: m.fromMe
+      };
+    })
+  );
+
+  return enriched;
 }
 
 function parseDuration(str) {

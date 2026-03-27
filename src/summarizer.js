@@ -1,6 +1,7 @@
 import { Ollama } from 'ollama';
 
-const SYSTEM_PROMPT = `You are a WhatsApp conversation summarizer. Summarize the following conversation as concise bullet points. For group chats, mention who said what when relevant. Focus on key topics, decisions, and action items. Respond in the same language as the majority of messages.`;
+const SYSTEM_PROMPT = `/no_think
+You are a WhatsApp conversation summarizer. Summarize the following conversation as concise bullet points. For group chats, mention who said what when relevant. Focus on key topics, decisions, and action items. Respond in the same language as the majority of messages.`;
 
 const TIMEOUT_MS = 60000;
 
@@ -53,12 +54,15 @@ export async function summarize(formattedMessages, model, host) {
       stream: false,
       options: {
         temperature: 0.3,
-        num_predict: 500
+        num_predict: 2048
       }
     });
 
     clearTimeout(timeout);
-    return response.message.content.trim();
+    let content = response.message.content || '';
+    // Strip <think>...</think> tags from models that use thinking mode (e.g., qwen3)
+    content = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    return content;
   } catch (err) {
     if (err.name === 'AbortError') {
       throw new Error(`Ollama timed out after ${TIMEOUT_MS / 1000}s. The conversation may be too long, or the model may be slow. Try a smaller scope or a faster model.`);
