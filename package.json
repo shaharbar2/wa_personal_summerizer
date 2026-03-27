@@ -1,0 +1,23 @@
+{
+  "name": "wasumm",
+  "version": "1.0.0",
+  "description": "WhatsApp conversation summarizer powered by local LLM (Ollama)",
+  "type": "module",
+  "main": "src/cli.js",
+  "bin": {
+    "wasumm": "./bin/wasumm.js"
+  },
+  "scripts": {
+    "start": "node bin/wasumm.js"
+  },
+  "keywords": ["whatsapp", "summarizer", "ollama", "cli"],
+  "license": "MIT",
+  "dependencies": {
+    "clipboardy": "^4.0.0",
+    "commander": "^13.0.0",
+    "ollama": "^0.5.0",
+    "ora": "^8.0.0",
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}
