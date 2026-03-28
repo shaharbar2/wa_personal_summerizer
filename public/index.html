@@ -672,6 +672,7 @@
 
     if (data.status === 'ready') {
       text.textContent = 'Connected';
+      MiniGame.stop();
       if (!document.getElementById('summaryPanel')) {
         showSummaryUI();
         loadChats();
@@ -694,6 +695,7 @@
     const main = document.getElementById('mainArea');
     if (!main.querySelector('.connecting-screen')) {
       main.innerHTML = `<div class="connecting-screen"><div class="spinner"></div><p>Connecting to WhatsApp...</p></div>`;
+      MiniGame.init(main.querySelector('.connecting-screen'));
     }
   }
 
@@ -706,6 +708,7 @@
           <div class="qr-box"><img src="${dataUrl}" alt="QR Code" /></div>
           <p>Open WhatsApp on your phone → Settings → Linked Devices → Link a Device</p>
         </div>`;
+      MiniGame.init(main.querySelector('.qr-screen'));
     } else {
       main.querySelector('.qr-box img').src = dataUrl;
     }
