@@ -211,6 +211,30 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Minigame */
+    .minigame-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .minigame-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    #gameCanvas {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface2);
+      cursor: none;
+      display: block;
+    }
+
     /* Summarize panel */
     .panel {
       flex: 1;
