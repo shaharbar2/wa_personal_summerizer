@@ -4,6 +4,7 @@ import { formatMessages } from './formatter.js';
 import { checkProvider, summarize } from './summarizer.js';
 import { printSummary, copyToClipboard } from './output.js';
 import { loadConfig } from './config.js';
+import { parseExport, detectChatName } from './parser.js';
 import ora from 'ora';
 
 const program = new Command();
@@ -120,6 +121,55 @@ program
       process.exit(1);
     } finally {
       if (client) await client.destroy();
+    }
+  });
+
+program
+  .command('parse <file>')
+  .description('✅ RECOMMENDED (Legal) — Summarize an exported WhatsApp chat file')
+  .option('-l, --last <number>', 'last N messages')
+  .option('-s, --since <duration>', 'messages from last Nh or Nd (e.g., 2h, 1d)')
+  .option('-f, --from <date>', 'messages since date (YYYY-MM-DD)')
+  .option('-m, --model <name>', 'override model from config')
+  .option('-p, --provider <name>', 'override provider (ollama, openai, anthropic)')
+  .action(async (filePath, options) => {
+    const config = loadConfig();
+    if (options.model) config.model = options.model;
+    if (options.provider) config.provider = options.provider;
+
+    let scope;
+    if (options.last) scope = { type: 'last', value: parseInt(options.last) };
+    else if (options.since) scope = { type: 'since', value: options.since };
+    else if (options.from) scope = { type: 'from', value: options.from };
+    else scope = { type: 'all' };
+
+    const spinner = ora(`Checking ${config.provider || 'ollama'} provider...`).start();
+    try {
+      await checkProvider(config);
+
+      spinner.text = 'Parsing export file...';
+      const messages = parseExport(filePath, scope);
+      const chatName = detectChatName(filePath);
+
+      if (messages.length === 0) {
+        spinner.info('No messages found for the given scope.');
+        return;
+      }
+
+      const isGroup = messages.some(
+        (m, i, arr) => arr.findIndex(x => x.senderName !== m.senderName) !== -1
+      );
+      const formatted = formatMessages(messages, isGroup);
+
+      spinner.text = `Summarizing ${messages.length} messages with ${config.provider || 'ollama'}/${config.model}...`;
+      const summary = await summarize(formatted, config);
+
+      spinner.stop();
+      printSummary(chatName, `${messages.length} messages from export`, summary);
+      await copyToClipboard(summary);
+    } catch (err) {
+      spinner.fail(err.message);
+      process.exit(1);
     }
   });
 

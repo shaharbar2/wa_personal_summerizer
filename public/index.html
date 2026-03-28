@@ -412,6 +412,135 @@
     }
     .no-selection .icon { font-size: 48px; opacity: 0.2; }
 
+    /* Export banner */
+    .export-banner {
+      background: linear-gradient(90deg, rgba(37,211,102,0.1) 0%, rgba(37,211,102,0.04) 100%);
+      border-bottom: 1px solid rgba(37,211,102,0.25);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .export-badge {
+      background: var(--accent);
+      color: #000;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    .export-label {
+      font-size: 13px;
+      font-weight: 500;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .export-label small {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    .export-file-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 7px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .export-file-btn:hover { background: var(--accent-dark); }
+
+    .export-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 24px;
+      flex-shrink: 0;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .export-divider::before, .export-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Export result modal overlay */
+    .export-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 24px;
+    }
+
+    .export-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 680px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .export-modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .export-modal-title { font-size: 15px; font-weight: 600; }
+
+    .export-modal-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 20px;
+      padding: 0 4px;
+      line-height: 1;
+    }
+    .close-btn:hover { color: var(--text); }
+
+    .export-modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -428,6 +557,51 @@
     <span id="statusText">Connecting...</span>
   </div>
 </header>
+
+<!-- ✅ RECOMMENDED: Export file mode -->
+<div class="export-banner">
+  <span class="export-badge">✅ RECOMMENDED</span>
+  <div class="export-label">
+    Summarize from exported chat file
+    <small>100% legal · no account risk · works offline · export from WhatsApp → Settings → Chats → Export Chat</small>
+  </div>
+  <button class="export-file-btn" onclick="document.getElementById('exportFileInput').click()">
+    📂 Upload Chat Export (.txt)
+  </button>
+  <input type="file" id="exportFileInput" accept=".txt,.zip" style="display:none" onchange="handleExportFile(this)" />
+</div>
+<div class="export-divider">or use live connection below (unofficial — see disclaimer)</div>
+
+<!-- Export modal -->
+<div class="export-overlay" id="exportOverlay" style="display:none">
+  <div class="export-modal">
+    <div class="export-modal-header">
+      <div>
+        <div class="export-modal-title" id="exportModalTitle">Summarize Export</div>
+      </div>
+      <div class="export-modal-controls">
+        <div class="scope-tabs" style="margin:0">
+          <button class="scope-tab active" data-scope="all" onclick="selectExportScope(this)">All</button>
+          <button class="scope-tab" data-scope="last" onclick="selectExportScope(this)">Last N</button>
+          <button class="scope-tab" data-scope="since" onclick="selectExportScope(this)">Since</button>
+          <button class="scope-tab" data-scope="from" onclick="selectExportScope(this)">Date</button>
+        </div>
+        <input class="scope-input" id="exportScopeValue" type="text" placeholder="e.g. 50" style="display:none;width:110px" />
+        <select class="config-input" id="exportProviderSelect">
+          <option value="ollama">Ollama</option>
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+        </select>
+        <input class="config-input" id="exportModelInput" type="text" placeholder="qwen3:8b" style="width:110px" />
+        <button class="summarize-btn" style="margin:0" onclick="doExportSummarize()">⚡ Summarize</button>
+        <button class="close-btn" onclick="closeExportModal()">✕</button>
+      </div>
+    </div>
+    <div class="export-modal-body" id="exportModalBody">
+      <div class="result-placeholder"><div class="icon">✨</div><p>Click Summarize to generate</p></div>
+    </div>
+  </div>
+</div>
 
 <div class="layout">
   <!-- Sidebar: chat list -->
@@ -706,6 +880,104 @@
   function escHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
+
+  // --- Export file mode ---
+  let exportFileContent = null;
+  let exportFileName = null;
+  let exportScope = 'all';
+
+  function handleExportFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.name.endsWith('.zip')) {
+      alert('Please extract the ZIP and upload the "_chat.txt" file inside.');
+      input.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      exportFileContent = e.target.result;
+      exportFileName = file.name;
+      document.getElementById('exportModalTitle').textContent = `Summarize: ${file.name}`;
+      document.getElementById('exportModalBody').innerHTML = `
+        <div class="result-placeholder"><div class="icon">✨</div><p>Click Summarize to generate</p></div>`;
+      document.getElementById('exportOverlay').style.display = 'flex';
+    };
+    reader.readAsText(file, 'utf-8');
+    input.value = '';
+  }
+
+  function closeExportModal() {
+    document.getElementById('exportOverlay').style.display = 'none';
+  }
+
+  function selectExportScope(btn) {
+    document.querySelectorAll('.export-modal .scope-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    exportScope = btn.dataset.scope;
+    const input = document.getElementById('exportScopeValue');
+    if (exportScope === 'all') {
+      input.style.display = 'none';
+    } else if (exportScope === 'last') {
+      input.style.display = ''; input.placeholder = 'e.g. 50'; input.type = 'number';
+    } else if (exportScope === 'since') {
+      input.style.display = ''; input.placeholder = 'e.g. 2h or 1d'; input.type = 'text';
+    } else if (exportScope === 'from') {
+      input.style.display = ''; input.placeholder = 'YYYY-MM-DD'; input.type = 'date';
+    }
+  }
+
+  async function doExportSummarize() {
+    if (!exportFileContent) return;
+
+    const scopeValue = document.getElementById('exportScopeValue').value;
+    let scope;
+    if (exportScope === 'all') scope = { type: 'all' };
+    else if (exportScope === 'last') scope = { type: 'last', value: parseInt(scopeValue) || 50 };
+    else if (exportScope === 'since') scope = { type: 'since', value: scopeValue };
+    else if (exportScope === 'from') scope = { type: 'from', value: scopeValue };
+
+    const model = document.getElementById('exportModelInput').value.trim() || undefined;
+    const provider = document.getElementById('exportProviderSelect').value;
+
+    const body = document.getElementById('exportModalBody');
+    body.innerHTML = `<div class="loading-card"><div class="spinner"></div><span>Summarizing with ${provider}${model ? '/' + model : ''}...</span></div>`;
+
+    const btn = document.querySelector('.export-modal .summarize-btn');
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: exportFileContent, fileName: exportFileName, scope, model, provider })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      if (!data.summary) {
+        body.innerHTML = `<div class="result-placeholder"><div class="icon">🔇</div><p>No messages found for the selected scope.</p></div>`;
+        return;
+      }
+      const formatted = formatSummary(data.summary);
+      body.innerHTML = `
+        <div class="result-card">
+          <div class="result-card-header">
+            <span>${data.messageCount} messages · ${escHtml(data.chatName)}</span>
+            <button class="copy-btn" onclick="copyResult(this, ${JSON.stringify(data.summary).replace(/</g,'&lt;')})">Copy</button>
+          </div>
+          <div class="result-body">${formatted}</div>
+        </div>`;
+    } catch (err) {
+      body.innerHTML = `<div class="error-card">⚠️ ${escHtml(err.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('exportOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeExportModal();
+  });
 
   // Boot
   pollStatus();

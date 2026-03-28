@@ -10,6 +10,7 @@ import { getChats, fetchMessages, findChat } from './whatsapp.js';
 import { formatMessages } from './formatter.js';
 import { checkProvider, summarize } from './summarizer.js';
 import { loadConfig } from './config.js';
+import { parseContent, detectChatName } from './parser.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -120,6 +121,35 @@ app.post('/api/summarize', async (req, res) => {
     const summary = await summarize(formatted, config);
 
     res.json({ summary, messageCount: messages.length, chatName: chat.name });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Parse exported chat file (browser sends file content as text)
+app.post('/api/parse', async (req, res) => {
+  const { content, fileName, scope, model, provider } = req.body;
+  if (!content) return res.status(400).json({ error: 'content is required' });
+
+  const config = loadConfig();
+  if (model) config.model = model;
+  if (provider) config.provider = provider;
+
+  try {
+    await checkProvider(config);
+
+    const messages = parseContent(content, fileName, scope || { type: 'all' });
+    const chatName = detectChatName(fileName || 'Chat');
+
+    if (messages.length === 0) {
+      return res.json({ summary: null, messageCount: 0, chatName });
+    }
+
+    const isGroup = new Set(messages.map(m => m.senderName)).size > 2;
+    const formatted = formatMessages(messages, isGroup);
+    const summary = await summarize(formatted, config);
+
+    res.json({ summary, messageCount: messages.length, chatName });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

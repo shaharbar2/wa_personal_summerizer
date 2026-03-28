@@ -1,6 +1,48 @@
 # wa_personal_summerizer
 
-WhatsApp conversation summarizer powered by a local (or cloud) LLM. Summarize any chat in seconds — directly from your terminal.
+WhatsApp conversation summarizer powered by a local (or cloud) LLM. Summarize any chat in seconds — via the web UI, CLI, or by uploading an exported chat file.
+
+![Web UI Screenshot](docs/assets/screenshot-web-ui.png)
+
+---
+
+## ✅ Recommended: Use Exported Chat Files (Legal & Safe)
+
+The safest and fully legal way to use this tool is to **export your chats from WhatsApp** and summarize the file — no unofficial libraries, no account risk.
+
+### How to export a chat from WhatsApp
+
+**On iPhone:**
+Settings → Chats → Export Chat → choose a chat → "Without Media" → save the `.txt` file
+
+**On Android:**
+Open a chat → ⋮ menu → More → Export Chat → "Without Media" → save the `.txt` file
+
+### Summarize via web UI (recommended)
+
+```bash
+npm run web
+# Open http://localhost:3030
+# Click "Upload Chat Export (.txt)" at the top
+```
+
+### Summarize via CLI
+
+```bash
+wasumm parse "WhatsApp Chat with Family Group.txt" --last 50
+wasumm parse "WhatsApp Chat with Work Team.txt" --since 1d
+wasumm parse "WhatsApp Chat with John.txt" --from 2026-03-25
+```
+
+> **Note:** If WhatsApp gives you a `.zip` file, extract it and use the `_chat.txt` file inside.
+
+---
+
+## ⚡ Live Mode: Connect Directly (Unofficial)
+
+> ⚠️ **This mode uses [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.js), an unofficial client. It is not affiliated with or endorsed by WhatsApp/Meta and may violate their Terms of Service. Use at your own risk.** See [Disclaimer](#disclaimer) below.
+
+Live mode connects to your WhatsApp account in real-time — no manual export needed.
 
 ```bash
 wasumm summarize "Family Group" --since 1d
@@ -8,19 +50,15 @@ wasumm summarize "Work Team" --last 100
 wasumm summarize "John" --unread
 ```
 
-Summaries are printed to your terminal and automatically copied to your clipboard.
-
-![Web UI Screenshot](docs/assets/screenshot-web-ui.png)
-
 ---
 
 ## Features
 
+- **Two modes**: export file (legal ✅) or live connection (unofficial ⚠️)
 - Summarize by **last N messages**, **last N hours/days**, **since a date**, or **unread messages**
-- **Pluggable AI providers**: Ollama (local), OpenAI, Anthropic Claude, or any OpenAI-compatible API
+- **Web UI** at `localhost:3030` — upload a file or browse live chats
+- **Pluggable AI providers**: Ollama (local), OpenAI, Anthropic, or any OpenAI-compatible API
 - **Private by default** — with Ollama, no data ever leaves your machine
-- **Session persistence** — scan QR once, connect instantly from then on
-- **Contact name resolution** — summaries show real names, not phone numbers
 - **Clipboard integration** — summary is automatically copied after display
 
 ---
