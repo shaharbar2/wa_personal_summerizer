@@ -1,5 +1,8 @@
 # wa_personal_summerizer
 
+> **⚠️ Educational & Research Purpose Only**
+> This project is an **educational playground** intended solely for personal research and learning about LLM integration, WhatsApp data parsing, and local AI tooling. It is **not** intended for production use, commercial use, automation, bulk processing, or any purpose beyond individual experimentation. Use responsibly and at your own risk.
+
 WhatsApp conversation summarizer powered by a local (or cloud) LLM. Summarize any chat in seconds — via the web UI, CLI, or by uploading an exported chat file.
 
 ![Web UI Screenshot](docs/assets/screenshot-web-ui.png)
