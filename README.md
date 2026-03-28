@@ -1,4 +1,4 @@
-# wasumm
+# wa_personal_summerizer
 
 WhatsApp conversation summarizer powered by a local (or cloud) LLM. Summarize any chat in seconds — directly from your terminal.
 
