@@ -10,6 +10,8 @@ wasumm summarize "John" --unread
 
 Summaries are printed to your terminal and automatically copied to your clipboard.
 
+![Web UI Screenshot](docs/assets/screenshot-web-ui.png)
+
 ---
 
 ## Features
