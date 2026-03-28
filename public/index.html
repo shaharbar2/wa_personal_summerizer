@@ -1060,6 +1060,8 @@ const MiniGame = (() => {
       canvas.removeEventListener('touchmove', onTouch);
     }
     document.removeEventListener('keydown', onKey);
+    canvas?.closest('.minigame-wrap')?.remove();
+    canvas = null;
   }
 
   function onMouse(e) {
@@ -1076,9 +1078,9 @@ const MiniGame = (() => {
 
   function onKey(e) {
     if (!active) return;
-    if (lives <= 0 && e.code === 'Space') { reset(); return; }
-    if (e.code === 'ArrowLeft')  basket.x -= 20;
-    if (e.code === 'ArrowRight') basket.x += 20;
+    if (lives <= 0 && e.code === 'Space') { reset(); e.preventDefault(); return; }
+    if (e.code === 'ArrowLeft')  { basket.x -= 20; e.preventDefault(); }
+    if (e.code === 'ArrowRight') { basket.x += 20; e.preventDefault(); }
     clampBasket();
   }
 
@@ -1188,6 +1190,8 @@ const MiniGame = (() => {
 })();
 
   // Boot
+  const _initScreen = document.getElementById('connectingScreen');
+  if (_initScreen) MiniGame.init(_initScreen);
   pollStatus();
   pollingInterval = setInterval(pollStatus, 3000);
 </script>
