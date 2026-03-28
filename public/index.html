@@ -1015,6 +1015,7 @@ const MiniGame = (() => {
   let basket, items, score, lives, speed, spawnTimer, spawnInterval;
 
   function init(container) {
+    if (active) stop();
     // Create canvas + label wrapper
     const wrap = document.createElement('div');
     wrap.className = 'minigame-wrap';
@@ -1129,7 +1130,7 @@ const MiniGame = (() => {
       // missed
       if (it.y > H) {
         items.splice(i, 1);
-        lives--;
+        lives = Math.max(0, lives - 1);
       }
     }
   }
@@ -1147,7 +1148,11 @@ const MiniGame = (() => {
     // basket
     ctx.fillStyle = '#25d366';
     ctx.beginPath();
-    ctx.roundRect(basket.x, basket.y, BASKET_W, BASKET_H, 4);
+    if (ctx.roundRect) {
+      ctx.roundRect(basket.x, basket.y, BASKET_W, BASKET_H, 4);
+    } else {
+      ctx.rect(basket.x, basket.y, BASKET_W, BASKET_H);
+    }
     ctx.fill();
 
     // HUD
@@ -1172,6 +1177,7 @@ const MiniGame = (() => {
       ctx.fillText(`Score: ${score}`, W / 2, H / 2 + 10);
       ctx.fillText('Press Space to restart', W / 2, H / 2 + 32);
       ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
     }
   }
 
