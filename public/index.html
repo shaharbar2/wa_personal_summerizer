@@ -1003,6 +1003,181 @@
     if (e.target === e.currentTarget) closeExportModal();
   });
 
+// --- MiniGame: Message Catcher ---
+const MiniGame = (() => {
+  const EMOJIS = ['💬', '📱', '✉️', '📩', '🔔'];
+  const W = 360, H = 240;
+  const BASKET_W = 60, BASKET_H = 14;
+  const ITEM_SIZE = 22;
+  const LIVES_MAX = 3;
+
+  let canvas, ctx, raf, active = false;
+  let basket, items, score, lives, speed, spawnTimer, spawnInterval;
+
+  function init(container) {
+    // Create canvas + label wrapper
+    const wrap = document.createElement('div');
+    wrap.className = 'minigame-wrap';
+    wrap.innerHTML = '<span class="minigame-label">While you wait\u2026</span>';
+
+    canvas = document.createElement('canvas');
+    canvas.id = 'gameCanvas';
+    canvas.width = W;
+    canvas.height = H;
+    wrap.appendChild(canvas);
+    container.appendChild(wrap);
+
+    ctx = canvas.getContext('2d');
+    canvas.addEventListener('mousemove', onMouse);
+    canvas.addEventListener('touchmove', onTouch, { passive: true });
+    document.addEventListener('keydown', onKey);
+
+    reset();
+    raf = requestAnimationFrame(loop);
+    active = true;
+  }
+
+  function reset() {
+    basket = { x: W / 2 - BASKET_W / 2, y: H - 24 };
+    items = [];
+    score = 0;
+    lives = LIVES_MAX;
+    speed = 1.4;
+    spawnTimer = 0;
+    spawnInterval = 90; // frames
+  }
+
+  function stop() {
+    if (!active) return;
+    active = false;
+    cancelAnimationFrame(raf);
+    if (canvas) {
+      canvas.removeEventListener('mousemove', onMouse);
+      canvas.removeEventListener('touchmove', onTouch);
+    }
+    document.removeEventListener('keydown', onKey);
+  }
+
+  function onMouse(e) {
+    const rect = canvas.getBoundingClientRect();
+    basket.x = (e.clientX - rect.left) * (W / rect.width) - BASKET_W / 2;
+    clampBasket();
+  }
+
+  function onTouch(e) {
+    const rect = canvas.getBoundingClientRect();
+    basket.x = (e.touches[0].clientX - rect.left) * (W / rect.width) - BASKET_W / 2;
+    clampBasket();
+  }
+
+  function onKey(e) {
+    if (!active) return;
+    if (lives <= 0 && e.code === 'Space') { reset(); return; }
+    if (e.code === 'ArrowLeft')  basket.x -= 20;
+    if (e.code === 'ArrowRight') basket.x += 20;
+    clampBasket();
+  }
+
+  function clampBasket() {
+    basket.x = Math.max(0, Math.min(W - BASKET_W, basket.x));
+  }
+
+  function spawnItem() {
+    items.push({
+      x: Math.random() * (W - ITEM_SIZE),
+      y: -ITEM_SIZE,
+      emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
+      speed: speed + Math.random() * 0.8
+    });
+  }
+
+  function loop() {
+    if (!active) return;
+    raf = requestAnimationFrame(loop);
+    update();
+    draw();
+  }
+
+  function update() {
+    if (lives <= 0) return; // game over — wait for space
+
+    spawnTimer++;
+    if (spawnTimer >= spawnInterval) {
+      spawnItem();
+      spawnTimer = 0;
+      // gradually speed up
+      speed = Math.min(speed + 0.05, 4);
+      spawnInterval = Math.max(spawnInterval - 2, 40);
+    }
+
+    for (let i = items.length - 1; i >= 0; i--) {
+      const it = items[i];
+      it.y += it.speed;
+
+      // caught
+      if (
+        it.y + ITEM_SIZE >= basket.y &&
+        it.y <= basket.y + BASKET_H &&
+        it.x + ITEM_SIZE >= basket.x &&
+        it.x <= basket.x + BASKET_W
+      ) {
+        items.splice(i, 1);
+        score++;
+        continue;
+      }
+
+      // missed
+      if (it.y > H) {
+        items.splice(i, 1);
+        lives--;
+      }
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // items
+    ctx.font = `${ITEM_SIZE}px serif`;
+    ctx.textBaseline = 'top';
+    for (const it of items) {
+      ctx.fillText(it.emoji, it.x, it.y);
+    }
+
+    // basket
+    ctx.fillStyle = '#25d366';
+    ctx.beginPath();
+    ctx.roundRect(basket.x, basket.y, BASKET_W, BASKET_H, 4);
+    ctx.fill();
+
+    // HUD
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.fillStyle = '#7a7f9a';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`Score: ${score}`, 8, 8);
+    const hearts = '\u2764\ufe0f'.repeat(lives) + '\uD83D\uDDA4'.repeat(LIVES_MAX - lives);
+    ctx.fillText(hearts, W - 8 - ctx.measureText(hearts).width, 8);
+
+    // game over overlay
+    if (lives <= 0) {
+      ctx.fillStyle = 'rgba(15,17,23,0.75)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#e8eaf0';
+      ctx.font = 'bold 20px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Game Over', W / 2, H / 2 - 18);
+      ctx.font = '14px -apple-system, sans-serif';
+      ctx.fillStyle = '#7a7f9a';
+      ctx.fillText(`Score: ${score}`, W / 2, H / 2 + 10);
+      ctx.fillText('Press Space to restart', W / 2, H / 2 + 32);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  return { init, stop };
+})();
+
   // Boot
   pollStatus();
   pollingInterval = setInterval(pollStatus, 3000);
