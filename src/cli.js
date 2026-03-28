@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { createWhatsAppClient, getChats, fetchMessages, findChat } from './whatsapp.js';
 import { formatMessages } from './formatter.js';
-import { checkOllama, summarize } from './summarizer.js';
+import { checkProvider, summarize } from './summarizer.js';
 import { printSummary, copyToClipboard } from './output.js';
 import { loadConfig } from './config.js';
 import ora from 'ora';
@@ -48,11 +48,12 @@ program
   .option('-s, --since <duration>', 'messages from last Nh or Nd (e.g., 2h, 1d)')
   .option('-f, --from <date>', 'messages since date (YYYY-MM-DD)')
   .option('-u, --unread', 'unread messages only')
-  .option('-m, --model <name>', 'Ollama model to use')
+  .option('-m, --model <name>', 'override model from config')
+  .option('-p, --provider <name>', 'override provider (ollama, openai, anthropic)')
   .action(async (chatName, options) => {
     const config = loadConfig();
-    const model = options.model || config.model || 'qwen3:8b';
-    const ollamaHost = config.ollamaHost || 'http://localhost:11434';
+    if (options.model) config.model = options.model;
+    if (options.provider) config.provider = options.provider;
 
     // Validate: only one scope flag
     const scopeFlags = [options.last, options.since, options.from, options.unread].filter(Boolean);
@@ -61,11 +62,11 @@ program
       process.exit(1);
     }
 
-    const spinner = ora('Checking Ollama...').start();
+    const spinner = ora(`Checking ${config.provider || 'ollama'} provider...`).start();
     let client;
     try {
-      // Pre-flight: check Ollama
-      await checkOllama(ollamaHost, model);
+      // Pre-flight: check provider
+      await checkProvider(config);
 
       // Connect to WhatsApp
       spinner.text = 'Connecting to WhatsApp...';
@@ -105,8 +106,8 @@ program
       const formatted = formatMessages(messages, chat.isGroup);
 
       // Summarize
-      spinner.text = `Summarizing ${messages.length} messages with ${model}...`;
-      const summary = await summarize(formatted, model, ollamaHost);
+      spinner.text = `Summarizing ${messages.length} messages with ${config.provider || 'ollama'}/${config.model}...`;
+      const summary = await summarize(formatted, config);
 
       spinner.stop();
 

@@ -5,6 +5,7 @@ import { homedir } from 'node:os';
 const CONFIG_PATH = join(homedir(), '.wasumm', 'config.json');
 
 const DEFAULTS = {
+  provider: 'ollama',
   model: 'qwen3:8b',
   ollamaHost: 'http://localhost:11434',
   defaultScope: 'unread'
