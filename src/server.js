@@ -126,7 +126,7 @@ app.post('/api/summarize', async (req, res) => {
 });
 
 // --- Start ---
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3030;
 const server = createServer(app);
 
 server.listen(PORT, () => {
