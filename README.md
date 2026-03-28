@@ -39,7 +39,7 @@ Summaries are printed to your terminal and automatically copied to your clipboar
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/wasumm.git
+git clone https://github.com/shaharbar2/wa_personal_summerizer.git
 cd wasumm
 ```
 
