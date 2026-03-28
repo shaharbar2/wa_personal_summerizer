@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>wa_personal_summerizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #25d366;
+      --accent-dark: #1aab52;
+      --text: #e8eaf0;
+      --text-muted: #7a7f9a;
+      --error: #ff5c5c;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo { font-size: 22px; }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .status-badge {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .status-dot.ready { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    .status-dot.connecting { background: #f0c040; animation: pulse 1.5s infinite; }
+    .status-dot.error { background: var(--error); }
+
+    @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+
+    /* Layout */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-header span { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .refresh-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+    }
+    .refresh-btn:hover { color: var(--text); background: var(--surface2); }
+
+    .chat-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .chat-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      user-select: none;
+    }
+    .chat-item:hover { background: var(--surface2); }
+    .chat-item.selected { background: rgba(37,211,102,0.12); }
+
+    .chat-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .chat-info { flex: 1; min-width: 0; }
+    .chat-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .unread-badge {
+      background: var(--accent);
+      color: #000;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-empty {
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* Main panel */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* QR overlay */
+    .qr-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 40px;
+    }
+
+    .qr-screen h2 { font-size: 20px; font-weight: 600; }
+    .qr-screen p { color: var(--text-muted); font-size: 14px; text-align: center; max-width: 320px; line-height: 1.6; }
+
+    .qr-box {
+      background: #fff;
+      padding: 16px;
+      border-radius: var(--radius);
+    }
+    .qr-box img { display: block; width: 240px; height: 240px; }
+
+    /* Connecting screen */
+    .connecting-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Summarize panel */
+    .panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-controls {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .selected-chat-label {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .selected-chat-label span { color: var(--text-muted); font-weight: 400; font-size: 14px; margin-left: 8px; }
+
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .scope-tabs {
+      display: flex;
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .scope-tab {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .scope-tab.active {
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .scope-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      width: 130px;
+      transition: border-color 0.2s;
+    }
+    .scope-input:focus { border-color: var(--accent); }
+
+    .summarize-btn {
+      margin-left: auto;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 8px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .summarize-btn:hover { background: var(--accent-dark); }
+    .summarize-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .model-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .config-input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .config-input:focus { border-color: var(--accent); }
+
+    .config-label { font-size: 12px; color: var(--text-muted); }
+
+    /* Result area */
+    .result-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .result-placeholder {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      gap: 12px;
+      text-align: center;
+    }
+    .result-placeholder .icon { font-size: 48px; opacity: 0.3; }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .result-card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .copy-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: var(--border); }
+    .copy-btn.copied { color: var(--accent); border-color: var(--accent); }
+
+    .result-body {
+      padding: 18px;
+      font-size: 14px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+
+    .result-body ul, .result-body li { list-style: none; }
+
+    .loading-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .error-card {
+      background: rgba(255,92,92,0.08);
+      border: 1px solid rgba(255,92,92,0.3);
+      border-radius: var(--radius);
+      padding: 18px;
+      color: var(--error);
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    /* No selection state */
+    .no-selection {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      gap: 12px;
+    }
+    .no-selection .icon { font-size: 48px; opacity: 0.2; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">💬</span>
+  <h1>wa_personal_summerizer</h1>
+  <div class="status-badge">
+    <div class="status-dot connecting" id="statusDot"></div>
+    <span id="statusText">Connecting...</span>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- Sidebar: chat list -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span>Chats</span>
+      <button class="refresh-btn" onclick="loadChats()" title="Refresh chats">↻</button>
+    </div>
+    <div class="chat-list" id="chatList">
+      <div class="sidebar-empty">Waiting for WhatsApp connection...</div>
+    </div>
+  </div>
+
+  <!-- Main area -->
+  <div class="main" id="mainArea">
+    <div class="connecting-screen" id="connectingScreen">
+      <div class="spinner"></div>
+      <p>Connecting to WhatsApp...</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  let selectedChat = null;
+  let pollingInterval = null;
+
+  // --- Status polling ---
+  async function pollStatus() {
+    try {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      updateStatus(data);
+    } catch {
+      setStatus('error', 'Server unreachable');
+    }
+  }
+
+  function updateStatus(data) {
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    const main = document.getElementById('mainArea');
+
+    dot.className = 'status-dot ' + data.status;
+
+    if (data.status === 'ready') {
+      text.textContent = 'Connected';
+      if (!document.getElementById('summaryPanel')) {
+        showSummaryUI();
+        loadChats();
+      }
+      clearInterval(pollingInterval);
+      pollingInterval = setInterval(pollStatus, 15000);
+    } else if (data.status === 'qr_ready') {
+      text.textContent = 'Scan QR Code';
+      showQR(data.qrDataUrl);
+    } else if (data.status === 'error') {
+      text.textContent = 'Error';
+      main.innerHTML = `<div class="connecting-screen"><p style="color:var(--error)">${data.error || 'Connection failed'}</p></div>`;
+    } else {
+      text.textContent = 'Connecting...';
+      showConnecting();
+    }
+  }
+
+  function showConnecting() {
+    const main = document.getElementById('mainArea');
+    if (!main.querySelector('.connecting-screen')) {
+      main.innerHTML = `<div class="connecting-screen"><div class="spinner"></div><p>Connecting to WhatsApp...</p></div>`;
+    }
+  }
+
+  function showQR(dataUrl) {
+    const main = document.getElementById('mainArea');
+    if (!main.querySelector('.qr-screen')) {
+      main.innerHTML = `
+        <div class="qr-screen">
+          <h2>Scan to connect</h2>
+          <div class="qr-box"><img src="${dataUrl}" alt="QR Code" /></div>
+          <p>Open WhatsApp on your phone → Settings → Linked Devices → Link a Device</p>
+        </div>`;
+    } else {
+      main.querySelector('.qr-box img').src = dataUrl;
+    }
+  }
+
+  function showSummaryUI() {
+    const main = document.getElementById('mainArea');
+    main.innerHTML = `
+      <div class="no-selection" id="noSelection">
+        <div class="icon">💬</div>
+        <p>Select a chat to summarize</p>
+      </div>
+      <div class="panel" id="summaryPanel" style="display:none">
+        <div class="panel-controls">
+          <div>
+            <div class="selected-chat-label" id="selectedChatName">—</div>
+          </div>
+          <div class="controls-row">
+            <div class="scope-tabs">
+              <button class="scope-tab active" data-scope="unread" onclick="selectScope(this)">Unread</button>
+              <button class="scope-tab" data-scope="last" onclick="selectScope(this)">Last N</button>
+              <button class="scope-tab" data-scope="since" onclick="selectScope(this)">Since</button>
+              <button class="scope-tab" data-scope="from" onclick="selectScope(this)">Date</button>
+            </div>
+            <input class="scope-input" id="scopeValue" type="text" placeholder="e.g. 50" style="display:none" />
+            <button class="summarize-btn" onclick="doSummarize()">
+              <span>⚡</span> Summarize
+            </button>
+          </div>
+          <div class="model-row">
+            <span class="config-label">Provider</span>
+            <select class="config-input" id="providerSelect">
+              <option value="ollama">Ollama</option>
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+            </select>
+            <span class="config-label">Model</span>
+            <input class="config-input" id="modelInput" type="text" placeholder="qwen3:8b" style="width:130px" />
+          </div>
+        </div>
+        <div class="result-area" id="resultArea">
+          <div class="result-placeholder">
+            <div class="icon">✨</div>
+            <p>Your summary will appear here</p>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // --- Scope selector ---
+  let currentScope = 'unread';
+
+  function selectScope(btn) {
+    document.querySelectorAll('.scope-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentScope = btn.dataset.scope;
+
+    const input = document.getElementById('scopeValue');
+    if (currentScope === 'unread') {
+      input.style.display = 'none';
+    } else if (currentScope === 'last') {
+      input.style.display = '';
+      input.placeholder = 'e.g. 50';
+      input.type = 'number';
+    } else if (currentScope === 'since') {
+      input.style.display = '';
+      input.placeholder = 'e.g. 2h or 1d';
+      input.type = 'text';
+    } else if (currentScope === 'from') {
+      input.style.display = '';
+      input.placeholder = 'YYYY-MM-DD';
+      input.type = 'date';
+    }
+  }
+
+  // --- Chat list ---
+  async function loadChats() {
+    const list = document.getElementById('chatList');
+    list.innerHTML = '<div class="sidebar-empty">Loading...</div>';
+    try {
+      const res = await fetch('/api/chats?limit=30');
+      if (!res.ok) throw new Error((await res.json()).error);
+      const chats = await res.json();
+      renderChats(chats);
+    } catch (err) {
+      list.innerHTML = `<div class="sidebar-empty" style="color:var(--error)">${err.message}</div>`;
+    }
+  }
+
+  function renderChats(chats) {
+    const list = document.getElementById('chatList');
+    if (!chats.length) {
+      list.innerHTML = '<div class="sidebar-empty">No chats found</div>';
+      return;
+    }
+    list.innerHTML = chats.map(c => `
+      <div class="chat-item" onclick="selectChat(this, '${escHtml(c.name)}')" data-name="${escHtml(c.name)}">
+        <div class="chat-avatar">${c.isGroup ? '👥' : '👤'}</div>
+        <div class="chat-info">
+          <div class="chat-name">${escHtml(c.name)}</div>
+          <div class="chat-meta">${c.isGroup ? 'Group' : 'Chat'}</div>
+        </div>
+        ${c.unreadCount > 0 ? `<span class="unread-badge">${c.unreadCount}</span>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function selectChat(el, name) {
+    document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedChat = name;
+
+    const noSel = document.getElementById('noSelection');
+    const panel = document.getElementById('summaryPanel');
+    if (noSel) noSel.style.display = 'none';
+    if (panel) {
+      panel.style.display = 'flex';
+      document.getElementById('selectedChatName').textContent = name;
+      document.getElementById('resultArea').innerHTML = `
+        <div class="result-placeholder"><div class="icon">✨</div><p>Your summary will appear here</p></div>`;
+    }
+  }
+
+  // --- Summarize ---
+  async function doSummarize() {
+    if (!selectedChat) return;
+
+    const scopeValue = document.getElementById('scopeValue')?.value;
+    let scope;
+    if (currentScope === 'unread') {
+      scope = { type: 'unread' };
+    } else if (currentScope === 'last') {
+      scope = { type: 'last', value: parseInt(scopeValue) || 20 };
+    } else if (currentScope === 'since') {
+      scope = { type: 'since', value: scopeValue };
+    } else if (currentScope === 'from') {
+      scope = { type: 'from', value: scopeValue };
+    }
+
+    const model = document.getElementById('modelInput').value.trim() || undefined;
+    const provider = document.getElementById('providerSelect').value;
+
+    const resultArea = document.getElementById('resultArea');
+    resultArea.innerHTML = `<div class="loading-card"><div class="spinner"></div><span>Summarizing with ${provider}${model ? '/' + model : ''}...</span></div>`;
+
+    const btn = document.querySelector('.summarize-btn');
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatName: selectedChat, scope, model, provider })
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+      if (!data.summary) {
+        resultArea.innerHTML = `<div class="result-placeholder"><div class="icon">🔇</div><p>No messages found for the selected scope.</p></div>`;
+        return;
+      }
+
+      const formatted = formatSummary(data.summary);
+      resultArea.innerHTML = `
+        <div class="result-card">
+          <div class="result-card-header">
+            <span>${data.messageCount} messages · ${escHtml(data.chatName)}</span>
+            <button class="copy-btn" onclick="copyResult(this, ${JSON.stringify(data.summary).replace(/</g,'&lt;')})">Copy</button>
+          </div>
+          <div class="result-body">${formatted}</div>
+        </div>`;
+    } catch (err) {
+      resultArea.innerHTML = `<div class="error-card">⚠️ ${escHtml(err.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function formatSummary(text) {
+    return escHtml(text)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- /gm, '• ');
+  }
+
+  async function copyResult(btn, text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    } catch {
+      btn.textContent = 'Failed';
+    }
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Boot
+  pollStatus();
+  pollingInterval = setInterval(pollStatus, 3000);
+</script>
+</body>
+</html>

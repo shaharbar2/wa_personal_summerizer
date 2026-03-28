@@ -8,15 +8,23 @@
     "wasumm": "./bin/wasumm.js"
   },
   "scripts": {
-    "start": "node bin/wasumm.js"
+    "start": "node bin/wasumm.js",
+    "web": "node src/server.js"
   },
-  "keywords": ["whatsapp", "summarizer", "ollama", "cli"],
+  "keywords": [
+    "whatsapp",
+    "summarizer",
+    "ollama",
+    "cli"
+  ],
   "license": "MIT",
   "dependencies": {
     "clipboardy": "^4.0.0",
     "commander": "^13.0.0",
+    "express": "^5.2.1",
     "ollama": "^0.5.0",
     "ora": "^8.0.0",
+    "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "^1.26.0"
   }
